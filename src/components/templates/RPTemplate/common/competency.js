@@ -1,6 +1,6 @@
 import { get, groupBy } from "lodash";
 import React from "react";
-import { IMG_LOGO_RP_HORIZONTAL } from "./images";
+import { IMG_LOGO_RP_HORIZONTAL, IMG_LOGO_RP_HORIZONTAL24 } from "./images";
 import { formatDDMMMYYYY } from "./functions";
 export const fullWidthStyle = {
   width: "100%",
@@ -41,28 +41,51 @@ export const thStyle = {
   border: "1px solid black",
   textAlign: "left"
 };
-export const renderHeader = () => (
-  <div className="row">
-    <div className="col-7">
-      9 Woodlands Avenue 9, Sinagpore 738964
-      <br />
-      tel: (65) 6510 3000
-      <br />
-      <a href="https://www.rp.edu.sg">www.rp.edu.sg</a>
+export const renderHeader = document => {
+  const strTemplate = get(document, "$template.name");
+  //RP_2024_P_LCA
+  //0123456789012
+  const isBefore2025 =
+    strTemplate.substr(3, 4) === "2006" ||
+    strTemplate.substr(3, 4) === "2010" ||
+    strTemplate.substr(3, 4) === "2020" ||
+    strTemplate.substr(3, 4) === "2021" ||
+    strTemplate.substr(3, 4) === "2022" ||
+    strTemplate.substr(3, 4) === "2023" ||
+    strTemplate.substr(3, 4) === "2024"
+      ? 1
+      : 0;
+  const isDisplayNewLogo = isBefore2025 ? 0 : 1;
+  return (
+    <div className="row">
+      <div className="col-7">
+        9 Woodlands Avenue 9, Sinagpore 738964
+        <br />
+        tel: (65) 6510 3000
+        <br />
+        <a href="https://www.rp.edu.sg">www.rp.edu.sg</a>
+      </div>
+      <div className="col" />
+      <div className="col-4">
+        <img
+          style={fullWidthStyle}
+          src={
+            isDisplayNewLogo ? IMG_LOGO_RP_HORIZONTAL24 : IMG_LOGO_RP_HORIZONTAL
+          }
+          alt="RP Logo"
+        />
+      </div>
     </div>
-    <div className="col" />
-    <div className="col-4">
-      <img style={fullWidthStyle} src={IMG_LOGO_RP_HORIZONTAL} />
-    </div>
-  </div>
-);
+  );
+};
 //
 export const renderElementList = listEvent => {
   const strList = listEvent.map((s, i) => <p key={i}>{s}</p>);
   return strList;
 };
 //
-export const renderSkill = (skill, skillId, varDType, remarks) => {
+export const renderSkill = (skill, skillId, varDType, remarks, tversion) => {
+  //console.log('skill id :', skillId);
   const sem = get(skill, "[0].competencyLevel");
   const sType = sem.substring(0, 1);
   const sem1 = sem.substring(1);
@@ -85,10 +108,10 @@ export const renderSkill = (skill, skillId, varDType, remarks) => {
   skill.forEach(() => {
     iTotal++;
   });
-  console.log(iTotal); //iTotal will be count - 1
+  //console.log('Total:',iTotal); //iTotal will be count - 1
   const skillRows = skill.map((s, i) => {
     // i will start from 0 to n-1
-    console.log(i);
+    //console.log(i);
     const compNo = s.competencyCode; //s.competencyDescription.substring(0, 1);
     isChangeCompetency = competency === s.competencyDescription ? false : true;
 
@@ -103,20 +126,22 @@ export const renderSkill = (skill, skillId, varDType, remarks) => {
         competency = s.competencyDescription;
         listCompetencyLevelDescription = [];
         listCompetencyLevelDescription.push(s.competencyLevelDescription);
-        iCnt = iCnt + 1;
+        iCnt++;
       } else {
         // insert into listCompetencyLevelDescription
         listCompetencyLevelDescription.push(s.competencyLevelDescription);
       }
       // handle the last category and row.
       if (iTotal === i) {
-        console.log("last row");
-        console.log(i);
+        //console.log("last row");
+        //console.log("i : ",i);
         oldCompetency = competency;
         oldCompetencyDesc = [];
         oldCompetencyDesc = [].concat(listCompetencyLevelDescription); // copy the array
         isChangeCompetency = true;
-        iCnt = iCnt === 1 ? 2 : iCnt; // if only one item in the list, display the remarks
+        //iCnt = iCnt === 1 ? 2 : iCnt; // if only one item in the list, display the remarks
+        iCnt = iCnt === 2 ? 3 : iCnt; // to avoid display 3 columns twice if 2 competency descriptions
+        //console.log("iCNT", iCnt);
       }
     } else {
       // for table 1 - check s.competencyLevelDescription
@@ -174,16 +199,24 @@ export const renderSkill = (skill, skillId, varDType, remarks) => {
           ) : null}
           {compNo === "5" && isArchievement ? (
             <span>
+              <br />
               On three separate occasions:
               <ul>
                 <li>
                   Obtain individual patient demographic and medication use
                   record
                 </li>
-                <li>
-                  Perform physical count of medications and match against
-                  medication records
-                </li>
+                {tversion === "2023" ? (
+                  <li>
+                    Perform physical count of medications and match against
+                    medication records
+                  </li>
+                ) : (
+                  <li>
+                    Check the quantity of medications, physically or based on
+                    electronics records, and match against medication records
+                  </li>
+                )}
                 <li>
                   Perform up-to-date documentation of patient&apos;s medication
                   information in patient records
@@ -208,7 +241,7 @@ export const renderSkill = (skill, skillId, varDType, remarks) => {
         <tr key={i} style={thStyle}>
           <td style={thStyle}>{oldCompetency}</td>
           <td style={thStyle}>{renderElementList(oldCompetencyDesc)}</td>
-          {iCnt === 2 ? (
+          {iCnt === 2 || (i === iTotal && iCnt === 1) ? (
             <td
               rowSpan="0"
               style={{
@@ -266,6 +299,10 @@ export const renderSkill = (skill, skillId, varDType, remarks) => {
 
 export const renderLCA = (document, skills) => {
   // Get student info and course description
+  const strTemplate = get(document, "$template.name");
+  // RP_2023_P_LCA
+  // 0 12 3456789 01234
+  const sVersion = strTemplate.substr(3, 4);
   const recipientName = get(document, "recipient.name");
   const recipientID = get(document, "recipient.studentId");
   const sText = get(document, "additionalData.performancerange").split("|");
@@ -276,7 +313,7 @@ export const renderLCA = (document, skills) => {
   let varDType = { t: 0 };
 
   const renderedSkill = Object.keys(groupedSkill).map(skill =>
-    renderSkill(groupedSkill[skill], skill, varDType, Remarks)
+    renderSkill(groupedSkill[skill], skill, varDType, Remarks, sVersion)
   );
 
   return (
@@ -345,6 +382,7 @@ export const renderOneSignature = certificate => {
               certificate,
               "additionalData.skillSignatories[0].signature"
             )}
+            alt="Signature"
           />
         </div>
         <div className="text-left">

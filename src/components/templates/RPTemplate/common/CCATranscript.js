@@ -1,8 +1,8 @@
-import PropTypes from "prop-types";
-import { get, groupBy } from "lodash";
 import React from "react";
-import { IMG_LOGO_RP_HORIZONTAL } from "../common/images";
-import { formatDDMMMYYYY } from "../common/functions";
+
+import { get, groupBy, orderBy } from "lodash";
+import { IMG_LOGO_RP_HORIZONTAL, IMG_LOGO_RP_HORIZONTAL24 } from "./images";
+import { formatDDMMMYYYY } from "./functions";
 
 export const fullWidthStyle = {
   width: "100%",
@@ -38,11 +38,17 @@ export const boxStyle = {
   textAlign: "center"
 };
 
-export const renderHeader = () => (
+export const renderHeader = nYear => (
   <div>
     <div className="row">
       <div className="row d-flex justify-content-left">
-        <img style={fullWidthStyle} src={IMG_LOGO_RP_HORIZONTAL} />
+        <img
+          style={fullWidthStyle}
+          src={
+            nYear === 2025 ? IMG_LOGO_RP_HORIZONTAL24 : IMG_LOGO_RP_HORIZONTAL
+          }
+          alt="RP Logo"
+        />
       </div>
       <div className="col-4" />
     </div>
@@ -55,34 +61,51 @@ export const renderHeader = () => (
   </div>
 );
 
-export const renderGrade = (gradeRecord, i) => {
-  const gradeDetails = gradeRecord.name.split("|");
-  return;
-  <tr key={i}>
-    <td style={{ textAlign: "left" }}>{gradeDetails[0]}</td>
-    <td style={{ textAlign: "left" }}>{greadeDetails[1]}</td>
-    <td style={{ textAlign: "left" }}>{gradeDetails[2]}&nbsp;</td>
-  </tr>;
-};
-
-export const renderSemester = (semester, semesterId) => {
-  const subjectRows = semester.map((s, i) => renderGrade(s, i));
-  const sem = get(semester, "[0].semester");
+export const renderSemester = (semester, semesterId, varDType) => {
+  const sortSemester = orderBy(semester, ["name"]);
+  const subjectRows = sortSemester.map((s, i) => {
+    const gradeDetails = s.name.split("|");
+    return (
+      <tr key={i}>
+        <td style={{ textAlign: "left" }}>{gradeDetails[0]}</td>
+        <td style={{ textAlign: "left" }}>{gradeDetails[1]}</td>
+        <td style={{ textAlign: "left" }}>{gradeDetails[2]}&nbsp;</td>
+      </tr>
+    );
+  });
+  const sem = get(sortSemester, "[0].semester");
+  const sType = sem.substring(0, 1);
+  let sSubTitle = "";
+  const sem1 = sem.substring(1);
+  if (sType !== varDType.t) {
+    varDType.t = sType;
+    sSubTitle = sType < 2 ? "EVENTS" : "MEMBERSHIP";
+  }
   return (
     <div className="col-12" key={semesterId}>
       <div className="text-center">
-        <p style={{ textAlign: "left", fontWeight: "bold" }}>{sem} </p>
+        <p
+          style={{
+            textAlign: "left",
+            fontSize: "1.2rem",
+            fontWeight: "bold",
+            textDecoration: "underline"
+          }}
+        >
+          {sSubTitle}{" "}
+        </p>
+        <p style={{ textAlign: "left", fontWeight: "bold" }}>{sem1} </p>
         <table style={fullWidthStyle}>
           <tbody>
             <tr>
               <th style={{ width: "40%", textAlign: "left" }}>
-                <u>TITLE OF ACTIVITY</u>
+                <u>{sType < 2 ? "TITLE OF ACTIVITY" : "CLUB"}</u>
               </th>
               <th style={{ width: "30%", textAlign: "left" }}>
-                <u>ROLE</u>
+                <u>{sType < 2 ? "ROLE" : "INTEREST GROUP"}</u>
               </th>
               <th style={{ width: "30%", textAlign: "left" }}>
-                <u>ACHIEVEMENT</u>
+                <u>{sType < 2 ? "ACHIEVEMENT" : "APPOINTMENT"}</u>
               </th>
             </tr>
             {subjectRows}
@@ -102,13 +125,15 @@ export const renderCourse = (document, course) => {
   const recipientNricFin = !recipientNric ? recipientFin : recipientNric;
   const studentId = get(document, "recipient.studentId");
   const admissionDate = get(document, "admissionDate");
-  const graduationDate = get(document, "graduationDate");
+  const graduationDate = get(document, "issuedOn"); // graduationDate
 
   // Group all modules by semesters
-  const groupedSubjects = groupBy(course, "semester");
+  const sSemester = orderBy(course, ["semester"]).reverse();
+  const groupedSubjects = groupBy(sSemester, "semester");
+  let varDType = { t: 0 };
 
   const renderedSemesters = Object.keys(groupedSubjects).map(semester =>
-    renderSemester(groupedSubjects[semester], semester)
+    renderSemester(groupedSubjects[semester], semester, varDType)
   );
 
   return (
@@ -184,23 +209,13 @@ export const renderCourse = (document, course) => {
       </div>
       <hr style={{ borderWidths: "2rem", border: "1px solid black" }} />
       <div className="row">
-        <div className="col">
-          <p
-            style={{
-              fontSize: "1.2rem",
-              fontWeight: "bold",
-              textDecoration: "underline"
-            }}
-          >
-            EVENTS
-          </p>
-        </div>
+        <div className="col"></div>
       </div>
       <div className="row">{renderedSemesters}</div>
       <div className="row justify-content-center">
         <p style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
-          _________________________________________________END OF
-          TRANSCRIPT_________________________________________________
+          ___________________________________________END OF
+          TRANSCRIPT___________________________________________
         </p>
       </div>
     </div>
@@ -214,15 +229,3 @@ export const renderTranscript = document => {
   const renderedCourses = renderCourse(document, transcript);
   return <div>{renderedCourses}</div>;
 };
-
-const Template = ({ document }) => (
-  <div className="container" style={{ fontSize: "0.9rem" }}>
-    {renderHeader()}
-    {renderTranscript(document)}
-  </div>
-);
-
-Template.propTypes = {
-  document: PropTypes.object.isRequired
-};
-export default Template;

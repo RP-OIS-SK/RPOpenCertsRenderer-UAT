@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { get, groupBy } from "lodash";
 import React from "react";
-import { IMG_LOGO_RP_HORIZONTAL } from "./images";
+import { IMG_LOGO_RP_HORIZONTAL, IMG_LOGO_RP_HORIZONTAL24 } from "./images";
 import {
   formatDDMMMYYYY,
   formatBold,
@@ -42,31 +42,26 @@ export const boxStyle = {
   textAlign: "center"
 };
 
-export const renderHeader = () => (
-  <div className="row">
-    <div className="col-4">
-      <img style={fullWidthStyle} src={IMG_LOGO_RP_HORIZONTAL} />
-    </div>
-    <div className="col" />
-    <div className="col-7">
-      <div style={titleTextStyle}>TRANSCRIPT OF ACADEMIC RECORD</div>
-    </div>
-  </div>
-);
-
 // additional remarks for PET only
-export const renderRemarksGradingSystem = (is2020, isCET) => (
+// 2025 added changes for second line.
+export const renderRemarksGradingSystem = (
+  is2020,
+  isDisplayOldCETLegend,
+  isBf2025
+) => (
   <span>
     <br />
-    {isCET
+    {isDisplayOldCETLegend
       ? null
-      : "Incomplete Grade is implemented from Academic Year 2012 Semester 2 onwards\n"}
-    {!isCET && <br />}
-    {isCET
+      : isBf2025
+      ? "Incomplete Grade is implemented from Academic Year 2012 Semester 2 onwards.\n"
+      : "Incomplete Grade is implemented for full-time diplomas from Academic Year 2012 Semester 2 onwards.\n"}
+    {!isDisplayOldCETLegend && <br />}
+    {isDisplayOldCETLegend
       ? "Non-Graded Pass Grade is implemented from March 2022 onwards."
       : "Non-Graded Pass Grade is implemented from Academic Year 2020 onwards."}
     <br />
-    {isCET
+    {isDisplayOldCETLegend
       ? null
       : "A module for which grade point or modular credit is not accorded will not be considered in the computation of the cGPA.\n"}
   </span>
@@ -113,12 +108,59 @@ export const renderGradeList = listGrade => {
   ));
   return strList;
 };
+export const renderHeader = document => {
+  const strTemplate = get(document, "$template.name");
+  // check it is PET template  - position 16 for scheme 1.4, position 9 for scheme 2.0
+  //const isCET = strTemplate.substr(8, 6) === "P_MAIN" ? 0 : 1;
+  const isCET = strTemplate.substr(8, 2) === "C_" ? 1 : 0;
+  const isPET = !isCET;
+  //const isPFP = strTemplate.substr(8, 5) === "P_PFP" ? 1 : 0;
+  /* const isBefore2023 =
+    strTemplate.substr(3, 4) === "2020" ||
+    strTemplate.substr(3, 4) === "2021" ||
+    strTemplate.substr(3, 4) === "2022"
+      ? 1
+      : 0;
+    */
+
+  const isBefore2024 =
+    strTemplate.substr(3, 4) === "2006" ||
+    strTemplate.substr(3, 4) === "2010" ||
+    strTemplate.substr(3, 4) === "2020" ||
+    strTemplate.substr(3, 4) === "2021" ||
+    strTemplate.substr(3, 4) === "2022" ||
+    strTemplate.substr(3, 4) === "2023"
+      ? 1
+      : 0;
+  const isBefore2025 =
+    isBefore2024 || strTemplate.substr(3, 4) === "2024" ? 1 : 0;
+  const isDisplayNewLogo =
+    (isCET && isBefore2024) || (isPET && isBefore2025) ? 0 : 1;
+  return (
+    <div className="row">
+      <div className="col-4">
+        <img
+          style={fullWidthStyle}
+          src={
+            isDisplayNewLogo ? IMG_LOGO_RP_HORIZONTAL24 : IMG_LOGO_RP_HORIZONTAL
+          }
+          alt="RP Logo"
+        />
+      </div>
+      <div className="col" />
+      <div className="col-7">
+        <div style={titleTextStyle}>TRANSCRIPT OF ACADEMIC RECORD</div>
+      </div>
+    </div>
+  );
+};
 
 export const renderGradingSystem = document => {
   // get the template name
   const strTemplate = get(document, "$template.name");
   // check it is PET template  - position 16 for scheme 1.4, position 9 for scheme 2.0
-  const isCET = strTemplate.substr(8, 6) === "P_MAIN" ? 0 : 1;
+  //const isCET = strTemplate.substr(8, 6) === "P_MAIN" ? 0 : 1;
+  const isCET = strTemplate.substr(8, 2) === "C_" ? 1 : 0;
   const isPFP = strTemplate.substr(8, 5) === "P_PFP" ? 1 : 0;
   // RP_ 2022_P_ PFP
   // 0 12 3456789 01234
@@ -126,7 +168,22 @@ export const renderGradingSystem = document => {
   // check whether it is DPLUS template
   // const isNOTDPLUS = strTemplate.substr(8, 4) === "C_DP" ? 0 : 1;
   // RP_2020_P_MAIN
-  const is2020 = strTemplate.substr(3, 4) === "2020" ? 1 : 0;
+  // const is2020 = strTemplate.substr(3, 4) === "2020" ? 1 : 0;
+
+  //const is2021or22 =strTemplate.substr(3, 4) === "2021" || strTemplate.substr(3, 4) === "2022" ? 1 : 0;
+  const sYear = strTemplate.substr(3, 4);
+  const isBefore2023 =
+    sYear === "2020" || sYear === "2021" || sYear === "2022" ? 1 : 0;
+  const isBf2025 =
+    sYear === "2010" ||
+    sYear === "2020" ||
+    sYear === "2021" ||
+    sYear === "2022" ||
+    sYear === "2023" ||
+    sYear === "2024"
+      ? true
+      : false; //check year
+  const isDisplayOldCETLegend = isCET && isBefore2023 ? 1 : 0;
 
   const listGradeText1L = [
     { grade: "A", score: "4.0", desc: "Excellent" },
@@ -176,7 +233,7 @@ export const renderGradingSystem = document => {
     { grade: "Exempted", score: "-", desc: "Exempted from taking the module" },
     { grade: "Incomplete", score: "-", desc: "Incomplete" }
   ];
-  const listGradeText2L = [
+  const listGradeText2LC = [
     { grade: "DIST", score: "4.0", desc: "Distinction^" },
     { grade: "A", score: "4.0", desc: "Excellent" },
     { grade: "B+", score: "3.5", desc: "Very Good" },
@@ -185,8 +242,7 @@ export const renderGradingSystem = document => {
     { grade: "C", score: "2.0", desc: "Good" },
     { grade: "D+", score: "1.5", desc: "Pass" }
   ];
-
-  const listGradeText2R = [
+  const listGradeText2RC = [
     { grade: "D", score: "1.0", desc: "Pass" },
     { grade: "NGP", score: "1.0", desc: "Non-Graded Pass" },
     { grade: "F", score: "0.0", desc: "Fail" },
@@ -195,7 +251,30 @@ export const renderGradingSystem = document => {
     { grade: "Fail", score: "-", desc: "Fail" },
     { grade: "Exempted", score: "-", desc: "Exempted from taking the module" }
   ];
-
+  const listGradeText2LC23 = [
+    { grade: "DIST", score: "4.0", desc: "Distinction^" },
+    { grade: "A", score: "4.0", desc: "Excellent" },
+    { grade: "B+", score: "3.5", desc: "Very Good" },
+    { grade: "B", score: "3.0", desc: "Very Good" },
+    { grade: "C+", score: "2.5", desc: "Good" },
+    { grade: "C", score: "2.0", desc: "Good" },
+    { grade: "D+", score: "1.5", desc: "Pass" },
+    { grade: "D", score: "1.0", desc: "Pass" }
+  ];
+  const listGradeText2RC23 = [
+    { grade: "NGP", score: "1.0", desc: "Non-Graded Pass" },
+    { grade: "F", score: "0.0", desc: "Fail" },
+    { grade: "Pass*", score: "-", desc: "Pass with Commendation" },
+    { grade: "Pass", score: "-", desc: "Pass" },
+    { grade: "Fail", score: "-", desc: "Fail" },
+    {
+      grade: "Exempted/EX",
+      score: "-",
+      desc: "Exempted from taking the module"
+    },
+    { grade: "Incomplete", score: "-", desc: "Incomplete" },
+    { grade: "TRF()", score: "-", desc: "Credit transfer" }
+  ];
   const listGradeTextPFPL = [
     { grade: "DIST", score: "", desc: "Distinction" },
     { grade: "A", score: "", desc: "Excellent" },
@@ -267,7 +346,9 @@ export const renderGradingSystem = document => {
                 <tbody>
                   {renderTableHeader(isPFP)}
                   {isCET
-                    ? renderGradeList(listGradeText2L)
+                    ? isBefore2023
+                      ? renderGradeList(listGradeText2LC)
+                      : renderGradeList(listGradeText2LC23)
                     : renderGradeList(listGradeText2LP)}
                 </tbody>
               </table>
@@ -279,9 +360,13 @@ export const renderGradingSystem = document => {
                   {isPFP
                     ? null
                     : isCET
-                    ? renderGradeList(listGradeText2R)
-                    : renderGradeList(listGradeText2RP)}
-                  {is2020 > 3 && (
+                    ? isBefore2023
+                      ? renderGradeList(listGradeText2RC)
+                      : renderGradeList(listGradeText2RC23)
+                    : isBf2025
+                    ? renderGradeList(listGradeText2RP)
+                    : renderGradeList(listGradeText2RC23)}
+                  {isBefore2023 > 3 && (
                     <tr>
                       <td style={{ paddingLeft: "10px" }}>
                         {isCET ? " " : "Incomplete"} &nbsp;
@@ -290,7 +375,7 @@ export const renderGradingSystem = document => {
                       <td>{isCET ? null : "Incomplete"}</td>
                     </tr>
                   )}
-                  {is2020 > 3 && (
+                  {isBefore2023 > 3 && (
                     <tr>
                       <td style={{ paddingLeft: "10px" }}>
                         {isCET ? " " : "NGP"} &nbsp;
@@ -299,7 +384,7 @@ export const renderGradingSystem = document => {
                       <td>{isCET ? null : "Non-Graded Pass"}</td>
                     </tr>
                   )}
-                  {isCET ? null : renderBlankLine()}
+                  {isCET ? null : isBf2025 ? renderBlankLine() : null}
                 </tbody>
               </table>
             </div>
@@ -308,7 +393,7 @@ export const renderGradingSystem = document => {
         {isPFP ? null : (
           <p>
             ^Distinction is awarded from Academic Year 2012 onwards.
-            {renderRemarksGradingSystem(is2020, isCET)}
+            {renderRemarksGradingSystem(isCET, isDisplayOldCETLegend, isBf2025)}
           </p>
         )}
         {isPFP ? null : (
@@ -352,11 +437,24 @@ export const renderCourse = (document, course) => {
   const admissionDate = get(document, "admissionDate");
   const graduationDate = get(document, "graduationDate");
   const strTemplate = get(document, "$template.name");
-  const isCET = strTemplate.substr(8, 6) === "P_MAIN" ? 0 : 1;
+  //const isCET = strTemplate.substr(8, 2) === "P_" ? 0 : 1;
+  const isCET = strTemplate.substr(8, 2) === "C_" ? 1 : 0;
+  //const isPET = strTemplate.substr(8, 6) === "P_MAIN" ? 1 : 0;
   const isPFP = strTemplate.substr(8, 5) === "P_PFP" ? 1 : 0;
+  const is2010 = strTemplate === "RP_2010_P_MAIN" ? 1 : 0;
+  const isBefore2024 =
+    strTemplate.substr(3, 4) === "2021" ||
+    strTemplate.substr(3, 4) === "2022" ||
+    strTemplate.substr(3, 4) === "2023"
+      ? 1
+      : 0;
+  const isCETBefore2024 = isCET && isBefore2024 ? 1 : 0;
+  const isMinCert = strTemplate.substr(8, 7) === "P_MINOR" ? 1 : 0;
+  const isPETMinor = strTemplate.substr(8, 7) === "P_NMAIN" ? 1 : 0;
   const courseText = isPFP ? "Polytechnic Foundation Programme for " : null;
   const moduleCodeTitle = isPFP ? "MODULE CODE" : "MODULE";
   const moduleTitle = isPFP ? "MODULE NAME" : "";
+  const minorTitle = isMinCert ? document.name + " in the " : "";
   // Group all modules by semesters
   const groupedSubjects = groupBy(course, "semester");
 
@@ -377,7 +475,10 @@ export const renderCourse = (document, course) => {
             : formatBold(s.name)}
         </td>
         <td>
-          {isCET > 0 || s.courseCredit === 0 || s.courseCredit === "0"
+          {isPFP ||
+          isCETBefore2024 ||
+          s.courseCredit === 0 ||
+          s.courseCredit === "0"
             ? ""
             : s.courseCredit}
         </td>
@@ -404,7 +505,8 @@ export const renderCourse = (document, course) => {
             <div className="col-10">
               :&nbsp;&nbsp;
               {courseText}
-              {document.name}
+              {isMinCert ? minorTitle : ""}
+              {isMinCert || isPETMinor ? document.description : document.name}
             </div>
           </div>
           <div className="row">
@@ -417,13 +519,13 @@ export const renderCourse = (document, course) => {
               className="col-4 justify-content-right"
               style={{ textAlign: "right" }}
             >
-              Date of Admission:
+              {isMinCert ? "" : "Date of Admission:"}
             </div>
             <div
               className="col-2 justify-content-right"
               style={{ textAlign: "right" }}
             >
-              {formatDDMMMYYYY(admissionDate)}
+              {isMinCert ? "" : formatDDMMMYYYY(admissionDate)}
             </div>
           </div>
           <div className="row">
@@ -436,7 +538,13 @@ export const renderCourse = (document, course) => {
               className="col-4 justify-content-right"
               style={{ textAlign: "right" }}
             >
-              Date of Endorsement:
+              Date of{" "}
+              {isMinCert
+                ? "Endorsement"
+                : is2010
+                ? "Graduation"
+                : "Endorsement"}
+              :
             </div>
             <div
               className="col-2 justify-content-right"
@@ -465,7 +573,17 @@ export const renderCourse = (document, course) => {
                   <u>{moduleTitle}</u>
                 </th>
                 <th>
-                  <u>{isCET > 0 ? "" : "MODULAR CREDITS"}</u>
+                  <u>
+                    {isCET
+                      ? isBefore2024
+                        ? ""
+                        : "CREDITS"
+                      : is2010
+                      ? "CREDITS"
+                      : isPFP
+                      ? ""
+                      : "MODULAR CREDITS"}
+                  </u>
                 </th>
                 <th>
                   <u>GRADE</u>
@@ -503,24 +621,43 @@ export const renderGPA = document => {
   const WithMerit = get(document, "additionalData.merit");
   const WithMeritTag = WithMerit === "Y" ? "with Merit" : "";
   const strTemplate = get(document, "$template.name");
-  const isCET = strTemplate.substr(8, 6) === "P_MAIN" ? 0 : 1;
+  const isCET = strTemplate.substr(8, 6) === "P_MAIN" || "P_NMAI" ? 0 : 1;
   const isNOTDPLUS = strTemplate.substr(8, 4) === "C_DP" ? 0 : 1;
   const isNOTDCN = strTemplate.substr(8, 4) === "C_DC" ? 0 : 1;
   const isPFP = strTemplate.substr(8, 5) === "P_PFP" ? 1 : 0;
+  const isMinCert = strTemplate.substr(8, 7) === "P_MINOR" ? 1 : 0;
+  const isPETMinor = strTemplate.substr(8, 7) === "P_NMAIN" ? 1 : 0;
+  const minorTitle = isMinCert ? document.name + " in the " : "";
+  const withMinorText = isPETMinor ? " with " + document.name : "";
   // const AwardText = isPFP ? "Completed the Polytechnic Foundation Programme for <br />" + document.name : "Awarded the " + formatBold(document.name) + formatBold(WithMeritTag);
-  return GPA ? (
+  // return GPA ? (
+
+  // PFP - do not render the GPA if it is PFP
+  return (
     <div className="row">
       <div className="col-3"> </div>
       <div className="col-6" style={boxStyle}>
-        {isNOTDPLUS && isCET && isNOTDCN ? null : renderPETGPA(GPA)}
+        {isNOTDPLUS && isCET && isNOTDCN
+          ? null
+          : isMinCert
+          ? null
+          : isPFP
+          ? null
+          : renderPETGPA(GPA)}
         {isPFP ? (
-          <span>
+          <div style={{ textAlign: "left", display: "inline-block" }}>
             Completed the Polytechnic Foundation Programme for <br />{" "}
             {document.name}
-          </span>
+          </div>
         ) : (
           <span>
-            Awarded the {formatBold(document.name)} {formatBold(WithMeritTag)}
+            Awarded the {formatBold(minorTitle)}
+            {isMinCert || isPETMinor
+              ? formatBold(document.description)
+              : formatBold(document.name)}{" "}
+            {formatBold(WithMeritTag)}
+            {isPETMinor ? <br /> : null}
+            {formatBold(withMinorText)}
           </span>
         )}
         <br />
@@ -534,7 +671,7 @@ export const renderGPA = document => {
         ----------------------------------------------------{" "}
       </div>
     </div>
-  ) : null;
+  );
 };
 
 export const renderSignature = document => {
@@ -553,6 +690,7 @@ export const renderSignature = document => {
           <img
             style={fullWidthStyle}
             src={document.additionalData.transcriptSignatories[0].signature}
+            alt="Signature"
           />
           <hr />
         </div>
@@ -576,7 +714,7 @@ export const renderSignature = document => {
 
 const Template = ({ document }) => (
   <div className="container" style={{ fontSize: "0.9rem" }}>
-    {renderHeader()}
+    {renderHeader(document)}
     {renderTranscript(document)}
     {renderGPA(document)}
     {renderSignature(document)}

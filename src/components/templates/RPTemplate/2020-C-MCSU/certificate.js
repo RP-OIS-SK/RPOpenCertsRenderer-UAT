@@ -14,10 +14,10 @@ const Template = ({ document }) => (
       className="container"
       style={{ border: 0, borderColor: "#AAA", borderStyle: "solid" }}
     >
-      {renderLogoRP()}
+      {renderLogoRP(2010)}
       {renderAwardTextCET(document, 1)}
       {renderTwoSignatures(document, 2)}
-      {renderLogoRPPartner(0)}
+      {renderLogoRPPartner(0, 2020)}
     </div>
     {renderFooter(document)}
   </div>
