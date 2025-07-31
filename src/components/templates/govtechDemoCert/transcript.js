@@ -212,6 +212,7 @@ class Template extends Component {
                   document,
                   "additionalData.certSignatories[0].signature"
                 )}
+                alt="signature"
               />
               <hr className="m-1" />
               <div className="transcript">
