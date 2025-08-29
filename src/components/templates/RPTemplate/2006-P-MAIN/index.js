@@ -1,5 +1,5 @@
 import RPCert from "./certificate";
-import RPTranscript from "../common/transcript2006";
+import RPTranscript from "../common/transcript";
 
 const templates = [
   {
